@@ -1,0 +1,36 @@
+📊 Epoch 1 → Train Acc: 0.9712, Val Acc: 0.9967
+📊 Epoch 2 → Train Acc: 0.9955, Val Acc: 0.9969
+📊 Epoch 3 → Train Acc: 0.9973, Val Acc: 0.9900
+📊 Epoch 4 → Train Acc: 0.9978, Val Acc: 0.9900
+📊 Epoch 5 → Train Acc: 0.9982, Val Acc: 0.9945
+📊 Epoch 6 → Train Acc: 0.9994, Val Acc: 0.9988
+📊 Epoch 7 → Train Acc: 0.9997, Val Acc: 0.9984
+📊 Epoch 8 → Train Acc: 0.9996, Val Acc: 0.9990
+📊 Epoch 9 → Train Acc: 0.9997, Val Acc: 0.9990
+📊 Epoch 10 → Train Acc: 0.9996, Val Acc: 0.9991
+📊 Epoch 11 → Train Acc: 0.9997, Val Acc: 0.9989
+📊 Epoch 12 → Train Acc: 0.9997, Val Acc: 0.9991
+📊 Epoch 13 → Train Acc: 0.9998, Val Acc: 0.9988
+📊 Epoch 14 → Train Acc: 1.0000, Val Acc: 0.9988
+📊 Epoch 15 → Train Acc: 0.9999, Val Acc: 0.9988
+⏹️ Early stopping triggered.
+📊 Epoch 16 → Train Acc: 1.0000, Val Acc: 0.9992
+📊 Epoch 17 → Train Acc: 1.0000, Val Acc: 0.9990
+📊 Epoch 18 → Train Acc: 0.9999, Val Acc: 0.9991
+📊 Epoch 19 → Train Acc: 0.9999, Val Acc: 0.9992
+📊 Epoch 20 → Train Acc: 0.9999, Val Acc: 0.9990
+
+🔎 Testing DenseNet121 @ Epoch 16...
+🔍 Testing: 100%|██████████████| 1870/1870 [23:59<00:00,  1.30it/s]
+
+✅ Test Accuracy @ Epoch 16: 0.9994
+
+📋 Classification Report:
+               precision    recall  f1-score   support
+
+        fake       1.00      1.00      1.00     15911
+        ffhq       1.00      1.00      1.00     14000
+
+    accuracy                           1.00     29911
+   macro avg       1.00      1.00      1.00     29911
+weighted avg       1.00      1.00      1.00     29911

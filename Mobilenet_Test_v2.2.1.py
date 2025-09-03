@@ -1,0 +1,114 @@
+import os
+import cv2
+import torch
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # ✅ Use non-interactive backend for headless servers
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tqdm import tqdm
+from torchvision import models, transforms
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from PIL import Image
+
+# ───────────────────────────────────────
+# 🔧 Configuration
+# ───────────────────────────────────────
+torch.cuda.set_device(0)
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("🚀 Using:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
+
+BASE_DIR = '/home/shavak/YC/project/datasets/ds_5'
+CHECKPOINT_DIR = '/home/shavak/YC/project/models/checkpoints_mobilenet_v2.2.1'
+EPOCH_TO_TEST = 10
+CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, f'mobilenetv2_epoch_{EPOCH_TO_TEST}_v2.2.1.pth')
+
+IMAGE_SIZE = 512
+BATCH_SIZE = 16
+
+# ───────────────────────────────────────
+# 🎨 CLAHE Transform
+# ───────────────────────────────────────
+class CLAHE:
+    def __call__(self, img):
+        img_np = np.array(img)
+        lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+        merged = cv2.merge((cl, a, b))
+        final_img = cv2.cvtColor(merged, cv2.COLOR_LAB2RGB)
+        return Image.fromarray(final_img)
+
+# ───────────────────────────────────────
+# 🔄 Transforms
+# ───────────────────────────────────────
+test_transform = transforms.Compose([
+    CLAHE(),
+    transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406],
+                         [0.229, 0.224, 0.225])
+])
+
+# ───────────────────────────────────────
+# 📁 Load Test Dataset
+# ───────────────────────────────────────
+test_dir = os.path.join(BASE_DIR, 'test')
+test_ds = ImageFolder(test_dir, transform=test_transform)
+test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
+class_names = test_ds.classes
+
+# ───────────────────────────────────────
+# 🧠 Load Model
+# ───────────────────────────────────────
+model = models.mobilenet_v2(weights=None)
+model.classifier[1] = torch.nn.Sequential(
+    torch.nn.Dropout(0.4),
+    torch.nn.Linear(model.last_channel, 1)
+)
+model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=DEVICE)['model_state'])
+model = model.to(DEVICE)
+model.eval()
+
+# ───────────────────────────────────────
+# 🧪 Inference
+# ───────────────────────────────────────
+all_preds = []
+all_labels = []
+
+with torch.no_grad():
+    for images, labels in tqdm(test_loader, desc=f"🔍 Testing Epoch {EPOCH_TO_TEST}", ncols=100):
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+        outputs = model(images)
+        probs = torch.sigmoid(outputs).squeeze()
+        preds = (probs > 0.5).int()
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+# ───────────────────────────────────────
+# 📊 Evaluation
+# ───────────────────────────────────────
+acc = accuracy_score(all_labels, all_preds)
+cm = confusion_matrix(all_labels, all_preds)
+report = classification_report(all_labels, all_preds, target_names=class_names)
+
+print(f"\n✅ Test Accuracy @ Epoch {EPOCH_TO_TEST}: {acc:.4f}")
+print("\n📋 Classification Report:\n", report)
+
+# ───────────────────────────────────────
+# 🖼️ Confusion Matrix Plot
+# ───────────────────────────────────────
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=class_names, yticklabels=class_names)
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title(f'Confusion Matrix (Epoch {EPOCH_TO_TEST})')
+plt.tight_layout()
+
+plot_path = os.path.join(CHECKPOINT_DIR, f'confusion_matrix_epoch_{EPOCH_TO_TEST}.png')
+plt.savefig(plot_path)
+print(f"📸 Confusion matrix saved to: {plot_path}")
